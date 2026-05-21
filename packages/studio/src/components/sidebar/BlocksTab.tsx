@@ -15,11 +15,12 @@ export interface BlockPreviewInfo {
 }
 
 interface BlocksTabProps {
+  onAddBlock?: (blockName: string) => void;
   onPreviewBlock?: (preview: BlockPreviewInfo | null) => void;
 }
 
 // fallow-ignore-next-line complexity
-export const BlocksTab = memo(function BlocksTab({ onPreviewBlock }: BlocksTabProps) {
+export const BlocksTab = memo(function BlocksTab({ onAddBlock, onPreviewBlock }: BlocksTabProps) {
   const { loading, error, search, setSearch, category, setCategory, filteredBlocks } =
     useBlockCatalog();
 
@@ -117,6 +118,11 @@ export const BlocksTab = memo(function BlocksTab({ onPreviewBlock }: BlocksTabPr
                   posterUrl={block.preview?.poster}
                   videoUrl={block.preview?.video}
                   onPreview={onPreviewBlock}
+                  onAdd={
+                    block.type === "hyperframes:component"
+                      ? () => onAddBlock?.(block.name)
+                      : undefined
+                  }
                 />
               );
             })}
@@ -280,9 +286,11 @@ function BlockCard({
   tags?: string[];
   posterUrl?: string;
   videoUrl?: string;
+  onAdd?: () => void;
   onPreview?: (preview: BlockPreviewInfo | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colors = getCategoryColors(category);
@@ -309,6 +317,17 @@ function BlockCard({
       if (hoverTimer.current) clearTimeout(hoverTimer.current);
     };
   }, []);
+
+  const handleAdd = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (adding || !onAdd) return;
+      setAdding(true);
+      onAdd();
+      setTimeout(() => setAdding(false), 1000);
+    },
+    [adding],
+  );
 
   const { activeCompPath, compositionDimensions } = useStudioContext();
 
@@ -372,28 +391,46 @@ function BlockCard({
           </div>
         )}
 
-        {/* Ask agent overlay */}
-        <button
-          type="button"
-          onClick={handleCopyPrompt}
-          className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity"
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-white"
+        {/* Action overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity">
+          {onAdd && (
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-white text-black text-[10px] font-semibold hover:bg-neutral-200 transition-colors"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {adding ? "Added" : "Add"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleCopyPrompt}
+            className={`flex items-center gap-1 px-3 ${onAdd ? "py-1" : "py-1.5"} rounded-md ${onAdd ? "bg-white/15 text-white/90 text-[9px]" : "bg-white text-black text-[10px] font-semibold"} hover:bg-white/25 transition-colors`}
           >
-            <rect x="9" y="9" width="13" height="13" rx="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-          <span className="text-[10px] font-semibold text-white">
+            <svg
+              width={onAdd ? 9 : 12}
+              height={onAdd ? 9 : 12}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
             {copied ? "Copied!" : "Ask agent"}
-          </span>
-        </button>
+          </button>
+        </div>
 
         {/* Badges */}
         <div className="absolute top-1 right-1 flex items-center gap-0.5 pointer-events-none">

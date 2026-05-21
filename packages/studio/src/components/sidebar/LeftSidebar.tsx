@@ -84,6 +84,7 @@ export const LeftSidebar = memo(
       onLint,
       linting,
       onToggleCollapse,
+      onAddBlock,
       onPreviewBlock,
       takeoverContent,
     },
@@ -246,7 +247,7 @@ export const LeftSidebar = memo(
             )}
 
             {STUDIO_BLOCKS_PANEL_ENABLED && tab === "blocks" && (
-              <BlocksTab onPreviewBlock={onPreviewBlock} />
+              <BlocksTab onAddBlock={onAddBlock} onPreviewBlock={onPreviewBlock} />
             )}
 
             {/* Lint button pinned at the bottom */}
